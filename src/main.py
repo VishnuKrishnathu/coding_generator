@@ -6,9 +6,10 @@ from os import path, environ
 from tasks import CodingQuestionTasks
 from pydantic import BaseModel
 from pymongo import MongoClient
+from bson import ObjectId
+import json
 
 langtrace.init(api_key=environ.get("LANGTRACE"))
-
 
 def coding_description(tasks, agents, coding_title_name):
     coding_desciption_genrating_agent = agents.coding_desciption_genrating_agent()
@@ -134,10 +135,15 @@ def main(coding_title_name):
         })
 
     update_data["description"] = description_data["description"]
+    update_data["exlpanation"] = description_data["explanation"]
+    update_data["constraints"] = description_data["constraints"]
+    update_data["note"] = description_data["note"]
     update_data["function_signature"] = description_data["function_signature"]
     update_data["questionCode"] = question_code
     update_data["solutions"] = solutions
     update_data["test_cases"] = testcases_data["testcases"]
+    update_data["private_test_cases"] = testcases_data["private_testcases"]
+    update_data["sanitized"] = True
 
     return update_data
 
@@ -150,7 +156,7 @@ if __name__ == "__main__":
     MONGO_URI = environ.get("MONGO_URI")
     DATABASE_NAME = environ.get("DATABASE_NAME")
     COLLECTION_NAME = environ.get("COLLECTION_NAME")
-    print(MONGO_URI, DATABASE_NAME, COLLECTION_NAME)
+    output = open("output.json", "w")
 
     # Connect to MongoDB
     client = MongoClient(MONGO_URI)
@@ -158,19 +164,9 @@ if __name__ == "__main__":
     collection = db[COLLECTION_NAME]
 
     try:
-        for question in collection.find({"name": "Jump Game II"}):
-            name = question['name']
-            print(f"Processing question: {name}")
-
-            updated_data = main(name)
-            result = collection.update_one(
-                {"name": name},
-                {"$set": updated_data}
-            )
-            print(result)
-
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
+        updated_data = main("4 Sum")
+        print(updated_data)
+        json.dump(updated_data, output)
 
     finally:
         # Close the connection
